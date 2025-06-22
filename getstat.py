@@ -22,43 +22,65 @@ Q = ферзь (queen)
 K = король (king)
 P = пешка (pawn)
 
-0 = пусто
+00 = пусто
 
 Cтартовый статус доски:
 "br bn bb bq bk bb bn br
 bp bp bp bp bp bp bp bp
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
 wp wp wp wp wp wp wp wp
 wr wn wb wq wk wb wn wr"
+
+
+Обозначение ходов:
+
+первая буква заглавная - фигура (без цвета)
+затем прописными и цифрами начальная и конечная клетки хода
+Ладья h1 - h2:  Rh1h2
+Конь g8 - f6: Ng8f6
+
+взятие: первая и конечная клетка резделяются 
+через прописной латинский x
+Ng8xf6
+Rh1xh2
+
+Рокировка: 
+для белого короля сначала пишется Ke1, а для черного Ke8
+затем пишется <O-O> - для короткой рокировки (прямо со знаками < и >, латинскими буквами O)
+или <O-O-O> - для длинной рокировки (прямо со знаками < и >, латинскими буквами O)
+
+Взятие на проходе: как взятие пишется через лат. x, а в конце ставится EP:
+Pe5xf6EP
 
 """
 
 
 # https://github.com/UmidSadatov/ChessModel.git
 
-board_stat = ("br bn bb bq bk bb bn br "
-              "bp bp bp bp bp bp bp bp "
-              "00 00 00 00 00 00 00 00 "
-              "00 00 00 wp 00 00 00 00 "
-              "00 00 00 00 00 00 00 00 "
-              "00 00 00 00 00 00 00 00 "
-              "wp wp wp 00 wp wp wp wp "
-              "wr wn wb wq wk wb wn wr")
+board_stat_example = (  "br bn bb bq bk 00 bn br "
+                        "bp bp bp bp bp bp bp bp "
+                        "00 00 00 00 00 00 00 00 "
+                        "bb 00 00 00 00 00 00 00 "
+                        "00 00 00 00 00 00 00 00 "
+                        "00 00 00 wp 00 00 00 00 "
+                        "wp wp wp 00 wp wp wp wp "
+                        "wr wn wb wq wk wb wn wr")
 
 
-board_stat_additional_data = {
+board_additional_data = {
     "check_to_white": False,  # Шах белому
     "mate_to_white": False,   # Мат белому
     "check_to_black": False,  # Шах черному
     "mate_to_black": False,   # Мат черному
 
-    "white_can_castle_kingside": False,  # белый может сделать короткую рокировку
-    "white_can_castle_queenside": False,  # белый может сделать длинную рокировку
-    "black_can_castle_kingside": False,  # белый может сделать короткую рокировку
-    "black_can_castle_queenside": False,  # белый может сделать длинную рокировку
+    "whites_chance_for_kingside_castling": True,  # у белых есть шанс на короткую рокировку при подходящей позиции
+    "whites_chance_for_queenside_castling": True,  # у белых есть шанс на длинную рокировку при подходящей позиции
+
+    "blacks_chance_for_kingside_castling": True,  # у черных есть шанс на короткую рокировку при подходящей позиции
+    "blacks_chance_for_queenside_castling": True,  # у черных есть шанс на длинную рокировку при подходящей позиции
 
     # Взятия на проходе
     # Например для белой пешки на f5: 
@@ -68,6 +90,7 @@ board_stat_additional_data = {
 }
 
 
+# перевести состояние доски из строчного вида в словарь
 def get_board_stat_dict(board_stat_str: str) -> dict:
     board_stat_dict = {}
 
@@ -85,6 +108,7 @@ def get_board_stat_dict(board_stat_str: str) -> dict:
     return board_stat_dict
 
 
+# перевести состояние доски из словаря в строку
 def get_board_stat_str(board_stat_dict: dict) -> str:
     board_stat_str = ''
     for num in '87654321':
@@ -93,19 +117,35 @@ def get_board_stat_str(board_stat_dict: dict) -> str:
     return board_stat_str[:-1]
 
 
+# показать доску
+def print_board(board_stat_str):
+    stat_list = board_stat_str.split(' ')
+    print(' '.join(stat_list[:8]))
+    print(' '.join(stat_list[8:16]))
+    print(' '.join(stat_list[16:24]))
+    print(' '.join(stat_list[24:32]))
+    print(' '.join(stat_list[32:40]))
+    print(' '.join(stat_list[40:48]))
+    print(' '.join(stat_list[48:56]))
+    print(' '.join(stat_list[56:]))
+
+
+# получить фигуру в заданной клетке
 def get_piece_in_cell(board_stat_str: str, cell: str) -> str:
     bsd = get_board_stat_dict(board_stat_str)
     return bsd[cell]
 
 
+# сделать заданную клетку пустым (убрать фигуру) и получить новое состояние доски
 def remove_piece_in_cell_and_get_new_board_stat(board_stat_str: str, cell: str) -> str:
     # убираем фигуру, сделав заданную клетку пустым, возвращаем новое состояние доски
-    bsd = get_board_stat_dict(board_stat_str)
+    bsd = get_board_stat_dict(board_stat_str)    
     bsd[cell] = '00'
     bss = get_board_stat_str(bsd)
     return bss
 
 
+# поставить заданную фигуру в заданную клетку
 def put_piece_in_cell_and_get_new_board_stat(board_stat_str: str, cell: str, piece: str) -> str:
     # ставим фигуру в заданную клетку 
     # (независимо какая была фигура до этого или была ли пустая данная клетка),
@@ -116,10 +156,11 @@ def put_piece_in_cell_and_get_new_board_stat(board_stat_str: str, cell: str, pie
     return bss
 
 
+# получить предварительный список возможных ходов, включая взятия
 def get_preliminary_moves_list_of_piece(board_stat_str: str, cell: str) -> list:
     #   получить ПРЕДВАРИТЕЛЬНЫЙ список возможных ходов фигуры 
     #   в заданной клетке при заданном состоянии доски
-    #   без учета: шахов, взятий на проходе, рокировок
+    #   без учета возможных шахов
 
     moves_list_of_piece = []
     piece = get_piece_in_cell(board_stat_str, cell)
@@ -449,6 +490,40 @@ def get_preliminary_moves_list_of_piece(board_stat_str: str, cell: str) -> list:
                 # если в целевой клетке находится фигура оппонента (другого цвета)
                 moves_list_of_piece.append(f'K{cell}x{target_cell}')
 
+        # РОКИРОВКА (при подходящей позиции):
+
+        # для белого
+        if piece == 'wk' and cell == 'e1':
+            # короткая
+            if \
+            get_piece_in_cell(board_stat_str, 'f1') == '00' and \
+            get_piece_in_cell(board_stat_str, 'g1') == '00' and \
+            get_piece_in_cell(board_stat_str, 'h1') == 'wr':
+                moves_list_of_piece.append('Ke1<O-O>')
+            # длинная
+            elif \
+            get_piece_in_cell(board_stat_str, 'd1') == '00' and \
+            get_piece_in_cell(board_stat_str, 'c1') == '00' and \
+            get_piece_in_cell(board_stat_str, 'b1') == '00' and \
+            get_piece_in_cell(board_stat_str, 'a1') == 'wr':
+                moves_list_of_piece.append('Ke1<O-O-O>')
+        
+        # для черного
+        elif piece == 'bk' and cell == 'e8':
+            # короткая
+            if \
+            get_piece_in_cell(board_stat_str, 'f8') == '00' and \
+            get_piece_in_cell(board_stat_str, 'g8') == '00' and \
+            get_piece_in_cell(board_stat_str, 'h8') == 'br':
+                moves_list_of_piece.append('Ke8<O-O>')
+            # длинная
+            elif \
+            get_piece_in_cell(board_stat_str, 'd8') == '00' and \
+            get_piece_in_cell(board_stat_str, 'c8') == '00' and \
+            get_piece_in_cell(board_stat_str, 'b8') == '00' and \
+            get_piece_in_cell(board_stat_str, 'a8') == 'br':
+                moves_list_of_piece.append('Ke8<O-O-O>')
+
 
     # Пешка
     if piece[1] == 'p':
@@ -474,7 +549,7 @@ def get_preliminary_moves_list_of_piece(board_stat_str: str, cell: str) -> list:
                 one_step_upper_cell = f'{cur_letter}{one_step_upper_num}'
                 one_step_upper_piece = get_piece_in_cell(board_stat_str, one_step_upper_cell)
 
-                # если клетка на сверху (на одну клетку) пустая
+                # если клетка сверху (на одну клетку выше) пустая
                 if one_step_upper_piece == '00':
                     # то можно сделать один ход (на одну клетку выше)
                     moves_list_of_piece.append(f'P{cell}{one_step_upper_cell}')
@@ -489,20 +564,46 @@ def get_preliminary_moves_list_of_piece(board_stat_str: str, cell: str) -> list:
                         if two_steps_upper_piece == '00':
                             # то можно сделать двойной ход (на две клетки выше)
                             moves_list_of_piece.append(f'P{cell}{two_steps_upper_cell}')
-                    
+                
+                # если данная фигура не в самом правом краю доски
                 if right_let_indx <= 7:
+                    # определим в какой горизонтали (букве)
                     right_letter = letters[right_let_indx]
                     upper_right_cell = f'{right_letter}{one_step_upper_num}'
                     upper_right_piece = get_piece_in_cell(board_stat_str, upper_right_cell)
+                    # если сверху справа находится фигура оппонента (другого цвета)
                     if piece[0] != upper_right_piece[0] and upper_right_piece != '00':
+                        # то добавим взятие как возможный ход
                         moves_list_of_piece.append(f'P{cell}x{upper_right_cell}')
+                    
+                    # ВЗЯТИЕ НА ПРОХОДЕ В ПРАВУЮ СТОРОНУ
+                    # если данная белая пешка находится в 5-ой горизонтали, сверху-справа пусто
+                    # и справа от него находится черная пешка
+                    if cur_num == 5 and upper_right_piece == '00':
+                        right_cell = f'{right_letter}5'
+                        right_piece = get_piece_in_cell(board_stat_str, right_cell)
+                        if right_piece == 'bp':
+                            moves_list_of_piece.append(f'P{cell}x{upper_right_cell}EP')
 
+                # если эта фигура не в самом левом краю доски
                 if left_let_indx >= 0:
                     left_letter = letters[left_let_indx]
                     upper_left_cell = f'{left_letter}{one_step_upper_num}'
+                    # определим фигуру сверху-слева
                     upper_left_piece = get_piece_in_cell(board_stat_str, upper_left_cell)
+                    # если слева-сверху фигура оппонента (другого цвета)
                     if piece[0] != upper_left_piece[0] and upper_left_piece != '00':
+                        # то учтем взятие как ход
                         moves_list_of_piece.append(f'P{cell}x{upper_left_cell}')
+                    
+                    # ВЗЯТИЕ НА ПРОХОДЕ В ЛЕВУЮ СТОРОНУ
+                    # если данная белая пешка находится в 5-ой горизонтали, сверху-слева пусто
+                    # и слева от него находится черная пешка
+                    if cur_num == 5 and upper_left_piece == '00':
+                        left_cell = f'{left_letter}5'
+                        left_piece = get_piece_in_cell(board_stat_str, left_cell)
+                        if left_piece == 'bp':
+                            moves_list_of_piece.append(f'P{cell}x{upper_left_cell}EP')
 
         # для черной пешки
         elif piece[0] == 'b':
@@ -531,6 +632,15 @@ def get_preliminary_moves_list_of_piece(board_stat_str: str, cell: str) -> list:
                     lower_right_piece = get_piece_in_cell(board_stat_str, lower_right_cell)
                     if piece[0] != lower_right_piece[0] and lower_right_piece != '00':
                         moves_list_of_piece.append(f'P{cell}x{lower_right_cell}')
+                    
+                    # ВЗЯТИЕ НА ПРОХОДЕ В ПРАВУЮ СТОРОНУ
+                    # если данная черная пешка находится в 4-ой горизонтали, снизу-справа пусто
+                    # и справа от него находится белая пешка
+                    if cur_num == 4 and lower_right_piece == '00':
+                        right_cell = f'{right_letter}4'
+                        right_piece = get_piece_in_cell(board_stat_str, right_cell)
+                        if right_piece == 'wp':
+                            moves_list_of_piece.append(f'P{cell}x{lower_right_cell}EP')
 
                 if left_let_indx >= 0:
                     left_letter = letters[left_let_indx]
@@ -538,19 +648,36 @@ def get_preliminary_moves_list_of_piece(board_stat_str: str, cell: str) -> list:
                     lower_left_piece = get_piece_in_cell(board_stat_str, lower_left_cell)
                     if piece[0] != lower_left_piece[0] and lower_left_piece != '00':
                         moves_list_of_piece.append(f'P{cell}x{lower_left_piece}')
+                    
+                    # ВЗЯТИЕ НА ПРОХОДЕ В ЛЕВУЮ СТОРОНУ
+                    # если данная черная пешка находится в 4-ой горизонтали, снизу-слева пусто
+                    # и слева от него находится белая пешка
+                    if cur_num == 4 and lower_left_piece == '00':
+                        left_cell = f'{left_letter}4'
+                        left_piece = get_piece_in_cell(board_stat_str, left_cell)
+                        if left_piece == 'wp':
+                            moves_list_of_piece.append(f'P{cell}x{lower_left_cell}EP')
 
 
     return moves_list_of_piece
 
 
+# получить какая фигура была взята при ходе
 def get_captured_piece_after_move(original_board_stat_str: str, move: str) -> str:
-    if 'x' in move:
-        captured_cell = move.split('x')[1]
-        return get_piece_in_cell(original_board_stat_str, captured_cell)
+    if 'x' in move:        
+        if move[-2:] == 'EP':
+            cells = move[1:-2].split('x')
+            original_cell, new_cell = cells[0], cells[1]
+            captured_cell = f'{new_cell[0]}{original_cell[1]}'
+            return get_piece_in_cell(original_board_stat_str, captured_cell)
+        else:
+            captured_cell = move.split('x')[1]
+            return get_piece_in_cell(original_board_stat_str, captured_cell)
     else:
         return '00'
 
 
+# шах ли белым
 def is_check_to_white(board_stat_str: str) -> bool:
     board_stat_dict = get_board_stat_dict(board_stat_str)
     for cell, piece in board_stat_dict.items():
@@ -564,6 +691,7 @@ def is_check_to_white(board_stat_str: str) -> bool:
     return False
 
 
+# шах ли черным
 def is_check_to_black(board_stat_str: str) -> bool:
     board_stat_dict = get_board_stat_dict(board_stat_str)
     for cell, piece in board_stat_dict.items():
@@ -582,86 +710,86 @@ def is_check_to_black(board_stat_str: str) -> bool:
     # blacks_preliminary_moves_list = get_preliminary_moves_list_of_piece()
 
 
-def get_board_stat_after_move(original_board_stat_str: str, move: str, change_additional_data = True) -> str:
+# получить состояние доски после хода 
+def get_board_stat_after_move(original_board_stat_str: str, move: str) -> str:
 
+    # если нет этого хода
     if move not in get_preliminary_moves_list_of_piece(original_board_stat_str, move[1:3]):
         raise AttributeError(f"move {move} is impossible")
-
-    # определим начальную и конечную клетку хода
-    if 'x' in move[1:]:
-        original_cell = move[1:].split('x')[0]
-        new_cell = move[1:].split('x')[1]
-    else:
-        original_cell = move[1:3]
-        new_cell = move[3:]
-
-    # определим фигуру (какая фигура выполняет ход: ладья, конь, пешка ит.д.)
-    moved_piece = get_piece_in_cell(original_board_stat_str, original_cell)
-
-    # Первый этап: убираем из доски фигуру который ходит из клетки где она находится и записываем доску в новую переменную
-    first_step_new_board = remove_piece_in_cell_and_get_new_board_stat(original_board_stat_str, original_cell)
-
-    # Второй этап: ставим фигуру в нужную клетку доски записываем доску в новую переменную
-    final_board = put_piece_in_cell_and_get_new_board_stat(first_step_new_board, new_cell, moved_piece)
-
-    # получаем цвет фигуры который ходил
-    piece = get_piece_in_cell(original_board_stat_str, move[1:3])
-    color = 'white' if piece[0] == 'w' else 'black'
-
-    # взятие на проходе:
-    if move in board_stat_additional_data[f'en_passant_chance_for_{color}']:
-        letter = move[1:].split('x')[1][0]
-        num = move[1:].split('x')[0][1]
-        final_board = remove_piece_in_cell_and_get_new_board_stat(final_board, f'{letter}{num}')
     
-    if change_additional_data:
-        # шанс взятия на проходе исчезает (независимо был ли он применен)
-        board_stat_additional_data[f'en_passant_chance_for_{color}'] = []
+    # если это рокировка
+    elif 'O-O' in move:
+        new_board = original_board_stat_str
 
-
-    # При двойном ходе пешки при некоторых условиях даем противнику шанс на взятие на проходе:
-    if move[0] == 'P':
-        cur_let_indx = 'abcdefgh'.index(move[1])
-        right_let_indx = cur_let_indx + 1
-        left_let_indx = cur_let_indx - 1
-
-        if color == 'white' and move[2] == '2' and move[4] == '4':
-            if right_let_indx <= 7:
-                right_letter = 'abcdefgh'.index(right_let_indx)
-                right_cell = f'{right_letter}4'
-                right_piece = get_piece_in_cell(final_board, right_cell)
-                if right_piece == 'bp' and change_additional_data:
-                    blacks_new_en_passant = f"P{right_cell}x{move[1]}3"
-                    board_stat_additional_data['en_passant_chance_for_black'].append(blacks_new_en_passant)
-            if left_let_indx >= 0:
-                left_letter = 'abcdefgh'.index(left_let_indx)
-                left_cell = f'{left_letter}4'
-                left_piece = get_piece_in_cell(final_board, left_cell)
-                if left_piece == 'bp' and change_additional_data:
-                    blacks_new_en_passant = f"P{left_cell}x{move[1]}3"
-                    board_stat_additional_data['en_passant_chance_for_black'].append(blacks_new_en_passant)
+        # короткая рокировка белого короля
+        if move == 'Ke1<O-O>':            
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'e1')
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'h1')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'g1', 'wk')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'f1', 'wr')
+            return new_board
         
-        elif color == 'black' and move[2] == '7' and move[4] == '5':
-            if right_let_indx <= 7:
-                right_letter = 'abcdefgh'[right_let_indx]
-                right_cell = f'{right_letter}5'
-                right_piece = get_piece_in_cell(final_board, right_cell)
-                if right_piece == 'wp' and change_additional_data:
-                    whites_new_en_passant = f"P{right_cell}x{move[1]}6"
-                    board_stat_additional_data['en_passant_chance_for_white'].append(whites_new_en_passant)
-            if left_let_indx >= 0:
-                left_letter = 'abcdefgh'[left_let_indx]
-                left_cell = f'{left_letter}5'
-                left_piece = get_piece_in_cell(final_board, left_cell)
-                if left_piece == 'wp' and change_additional_data:
-                    whites_new_en_passant = f"P{left_cell}x{move[1]}6"
-                    board_stat_additional_data['en_passant_chance_for_white'].append(whites_new_en_passant)       
+        # длинная рокировка белого короля
+        elif move == 'Ke1<O-O-O>':            
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'e1')
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'a1')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'c1', 'wk')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'd1', 'wr')
+            return new_board
+        
+        # короткая рокировка черного короля
+        elif move == 'Ke8<O-O>':            
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'e8')
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'h8')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'g8', 'bk')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'f8', 'br')
+            return new_board
+        
+        # длинная рокировка черного короля
+        elif move == 'Ke8<O-O-O>':           
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'e8')
+            new_board = remove_piece_in_cell_and_get_new_board_stat(new_board, 'a8')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'c8', 'bk')
+            new_board = put_piece_in_cell_and_get_new_board_stat(new_board, 'd8', 'br')
+            return new_board
+
+    else:
+
+        en_passant_captured_cell = None
+
+        # определим начальную и конечную клетку хода
+        if 'x' in move[1:]:
+
+            if move[-2:] == 'EP':
+                cells = move[1:-2].split('x')
+                original_cell, new_cell = cells[0], cells[1]
+                en_passant_captured_cell = f'{new_cell[0]}{original_cell[1]}'
+            else:
+                original_cell = move[1:].split('x')[0]
+                new_cell = move[1:].split('x')[1]
+
+        else:
+            original_cell = move[1:3]
+            new_cell = move[3:]
+
+        # определим фигуру (какая фигура выполняет ход: ладья, конь, пешка ит.д.)
+        moved_piece = get_piece_in_cell(original_board_stat_str, original_cell)
+
+        # Первый этап: убираем из доски фигуру который ходит из клетки где она находится и записываем доску в новую переменную
+        first_step_new_board = remove_piece_in_cell_and_get_new_board_stat(original_board_stat_str, original_cell)
+
+        # Второй этап: ставим фигуру в нужную клетку доски записываем доску в новую переменную
+        final_board = put_piece_in_cell_and_get_new_board_stat(first_step_new_board, new_cell, moved_piece)
+
+        # если было взятие на проходе, то освобождаем нужную клетку
+        if en_passant_captured_cell is not None:
+            final_board = remove_piece_in_cell_and_get_new_board_stat(final_board, en_passant_captured_cell)
+
+        # Возвращаем полученную доску
+        return final_board
 
 
-    # Возвращаем полученную доску
-    return final_board
-
-
+# мат ли белым
 def is_mate_to_white(board_stat_str: str) -> bool:
     if not is_check_to_white(board_stat_str):
         return False
@@ -678,6 +806,7 @@ def is_mate_to_white(board_stat_str: str) -> bool:
     return True
 
 
+# мат ли черным
 def is_mate_to_black(board_stat_str: str) -> bool:
     if not is_check_to_black(board_stat_str):
         return False
@@ -693,8 +822,77 @@ def is_mate_to_black(board_stat_str: str) -> bool:
 
     return True
 
-# print(get_preliminary_moves_list_of_piece(board_stat, 'e3'))
-# print(is_check_to_black(board_stat))
+
+def get_moves_list(board_stat_str: str,  color: str) -> list:
+    moves_list = []
+
+    for letter in 'abcdefgh':
+        for num in range(1,9):
+            cell = f'{letter}{num}'
+            piece = get_piece_in_cell(board_stat_str, cell)
+            if piece[0][0] == color[0]:
+                preliminary_moves_list_of_piece = get_preliminary_moves_list_of_piece(board_stat_str, cell)
+                for move in preliminary_moves_list_of_piece:
+                    # заранее представляемое состояние доски после рассматриваемого хода
+                    new_board = get_board_stat_after_move(board_stat_str, move)
+
+                    # исключаем все ходы, после которых самому же игроку (который сделал ход) будет шах (игрок сам себе не должен сделать шах)
+                    if (color == 'white' and is_check_to_white(new_board)) or (color == 'black' and is_check_to_black(new_board)):                        
+                        continue
+                    
+                    # исключаем короткие рокировки, которых нельзя совершать
+                    elif "<O-O>" in move:
+                        if not board_additional_data[f'{color}s_chance_for_kingside_castlin']:
+                            continue
+                        elif color == 'white':
+                            new_board_1 = remove_piece_in_cell_and_get_new_board_stat(board_stat_str, 'e1')
+                            new_board_11 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'f1', 'wk')
+                            new_board_12 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'g1', 'wk')
+                            if is_check_to_white(board_stat_str) or is_check_to_white(new_board_11) or is_check_to_white(new_board_12):
+                                continue
+                        elif color == 'black':
+                            new_board_1 = remove_piece_in_cell_and_get_new_board_stat(board_stat_str, 'e8')
+                            new_board_11 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'f8', 'bk')
+                            new_board_12 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'g8', 'bk')
+                            if is_check_to_black(board_stat_str) or is_check_to_black(new_board_11) or is_check_to_black(new_board_12):
+                                continue
+                    
+                    # исключаем длинные рокировки, которых нельзя совершать
+                    elif "<O-O-O>" in move:
+                        if not board_additional_data[f'{color}s_chance_for_queenside_castling']:
+                            continue
+                        elif color == 'white':
+                            new_board_1 = remove_piece_in_cell_and_get_new_board_stat(board_stat_str, 'e1')
+                            new_board_11 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'c1', 'wk')
+                            new_board_12 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'd1', 'wk')
+                            if is_check_to_white(board_stat_str) or \
+                            is_check_to_white(new_board_11) or \
+                            is_check_to_white(new_board_12):
+                                continue
+                        elif color == 'black':
+                            new_board_1 = remove_piece_in_cell_and_get_new_board_stat(board_stat_str, 'e1')
+                            new_board_11 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'c8', 'bk')
+                            new_board_12 = put_piece_in_cell_and_get_new_board_stat(new_board_1, 'd8', 'bk')
+                            if is_check_to_white(board_stat_str) or \
+                            is_check_to_white(new_board_11) or \
+                            is_check_to_white(new_board_12):
+                                continue
+                    
+                    # исключаем взятие на проходе, который не рарешен
+                    elif move[-2:] == 'EP' and move not in board_additional_data[f'en_passant_chance_for_{color}']:
+                        continue
+                    
+                    # после всех вышеуказанных фильтров, ход считается разрешенным
+                    else:
+                        moves_list.append(move)
+    
+    return moves_list
+
+
+# moves_list = get_moves_list(board_stat_example, 'white')
+# for m in moves_list:
+#     print(m)
+
 
 
 
